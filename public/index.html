@@ -2,56 +2,27 @@
 <html>
 <head>
 <meta name="utf8beacon" content="éçñøåá—" />
-<title>TiddlyWiki in the Sky with Dropbox</title>
+<title>TiddlyWiki5 in the Sky using Dropbox</title>
 <script src="//cdnjs.cloudflare.com/ajax/libs/dropbox.js/0.10.1/dropbox.min.js"></script>
+<script src="//code.jquery.com/jquery-2.2.0.min.js"></script>
+<link rel="icon" href="https://dl.dropboxusercontent.com/s/tm6mwe3jg18o13f/favicon.ico" type="image/x-icon"/>
+<link rel="shortcut icon" href="https://dl.dropboxusercontent.com/s/tm6mwe3jg18o13f/favicon.ico" type="image/x-icon"/>
+<!--<script src="twits.js"></script>-->
 <script>
+//https://www.dropbox.com/developers/reference/developer-guide
+//https://dl.dropboxusercontent.com/s/y4td4vq6wfw10dn/index.htm
 
 (function() {
+//Make sure TW5 can't see Dropbox
+var _dropbox = window.Dropbox;
+delete window.Dropbox;
 
-window.twits = {
-	// Original text of the TiddlyWiki file
-	originalText: null,
-	// Dropbox keys
-	isProd: (window.location.protocol + "//" + window.location.host + window.location.pathname) ===
-		"https://dl.dropboxusercontent.com/spa/4f6lw6nhu5zn5pr/TiddlyWiki/public/index.html",
-	apiKeyProd: "waukml5k6zt6vzr",
-	apiKeyDev: "5zahnrxzw6wsy70",
-	// The start of valid TiddlyWiki 2.x.x documents
-	start: '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">\n<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">\n<head>\n<' + 'script id="versionArea" type="text/javascript">\n//<![CDATA[\nvar version = {title: "TiddlyWiki", major: ',
-	// Definitions of the type, start and end of each block of a TiddlyWiki document
-	blocks: [{
-			type: 'html',
-			start: '<' + '/noscript>',
-			end: '<!--POST-STOREAREA-->'
-		},{
-			type: 'script',
-			start: '<' + 'script id="versionArea" type="text/javascript">\n//<![CDATA[',
-			end: '//]]>\n</' + 'script>'
-		},{
-			type: 'style', // Recent TiddlyWikis
-			start: '<' + 'style id="styleArea" type="text/css">',
-			end: '</' + 'style>'
-		},{
-			type: 'style', // Older TiddlyWikis
-			start: '<' + 'style type="text/css">',
-			end: '</' + 'style>'
-		},{
-			type: 'script',
-			start: '<' + 'script id="jsArea" type="text/javascript">\n//<![CDATA[',
-			end: '</' + 'script>'
-		},{
-			type: 'script',
-			start: '<' + 'script id="jsdeprecatedArea" type="text/javascript">',
-			end: '</' + 'script>'
-		},{
-			type: 'script',
-			start: '<' + 'script id="jslibArea" type="text/javascript">',
-			end: '</' + 'script>'
-		},{
-			type: 'script',
-			start: '<' + 'script id="jqueryArea" type="text/javascript">',
-			end: '</' + 'script>'
-		}]
+var twits = {
+	isProd: false, // (window.location.protocol + "//" + window.location.host + window.location.pathname) === "https://dl.dropboxusercontent.com/spa/4f6lw6nhu5zn5pr/TiddlyWiki/public/index.html",
+	apiKeyProd: "", //waukml5k6zt6vzr
+	apiKeyDev: "gy3j4gsa191p31x", //5zahnrxzw6wsy70
+
+	
 };
 
 // Main application
@@ -64,7 +35,7 @@ twits.initApp = function() {
 	// Initialise Dropbox for full access
 	twits.setStatusMessage("Initializing...");
 	var apiKey = twits.isProd ? twits.apiKeyProd : twits.apiKeyDev;
-	twits.client = new Dropbox.Client({
+	twits.client = new _dropbox.Client({
 	    key: apiKey, sandbox: false
 	});
 
@@ -172,14 +143,18 @@ twits.openFile = function(path) {
 			twits.originalPath = path;
 			twits.originalText = data;
 			// Fillet the content out of the TiddlyWiki
-		  	twits.filletTiddlyWiki(data);
+		  	//twits.filletTiddlyWiki(data);
+			twits.loadTW5(data);
 		} else {
 			twits.showError("Not a TiddlyWiki!");
 		}
 	}));
 }
 
+
+
 twits.getStatusPanel = function() {
+	debugger;
 	var getElement = function(id,parentNode) {
 			parentNode = parentNode || document;
 			var el = document.getElementById(id);
@@ -237,11 +212,68 @@ twits.trackProgress = function(xhr,isUpload) {
 	src.addEventListener("progress",onProgressHandler,false);
 	src.addEventListener("load",onLoadHandler,false);
 	src.addEventListener("error",onErrorHandler,false);
+
 };
 
 // Determine whether a string is a valid TiddlyWiki 2.x.x document
 twits.isTiddlyWiki = function(text) {
-	return text.indexOf(twits.start) === 0;
+	return true; //text.indexOf(twits.indexTWC) === 0 || text.indexOf(twits.indexTW5) > -1;
+};
+
+twits.loadTW5 = function(data){
+	var rawIndex = data.indexOf('<' + '!--~~ Raw markup ~~--' + '>');
+	
+	window.temp = data;
+	
+	var doc = document.createElement('html');
+	doc.innerHTML = data;
+	
+	this.test = doc;
+	
+	while( doc.children[0].childNodes.length > 0 ) {
+		//console.log(doc.children[0].childNodes[0]); 
+		try{ 
+			$(document.head).append(doc.children[0].childNodes[0]);
+		} catch (e) {
+			console.log(e); 
+		} 
+	} 
+	document.body.className = doc.children[1].className;
+	$(document.body).html(doc.children[1].innerHTML);
+	//while( doc.children[1].childNodes.length > 0 ) {
+		//console.log(doc.children[1].childNodes[0]); 
+		//try{ 
+		//	document.body.appendChild(doc.children[1].childNodes[0]);
+		//} catch (e) {
+		//	console.log(e); 
+		//} 
+	//}
+	
+	//var tags = document.getElementsByTagName('script');
+	
+	$tw.saverHandler.savers.push({
+		info: {
+			name: "tw5-in-the-sky",
+			priority: 5000,
+			capabilities: ["save"]
+		},
+		save: function( text, method, callback, options ){
+			twits.setStatusMessage("Saving changes...");
+			twits.setProgress("");
+			twits.trackProgress(twits.client.writeFile(twits.originalPath, text, function(error, stat) {
+				if(error) {
+					twits.showError(error);  // Something went wrong.
+					callback(error);
+					return;
+				} else {
+					twits.clearStatusMessage();
+					callback(null);
+				}
+			}),true);
+			return true;
+		}
+	});
+	
 };
 
 // Extract the blocks of a TiddlyWiki 2.x.x document and add them to the current document
@@ -288,23 +320,7 @@ twits.patchedSaveChanges = function(onlyIfDirty,tiddlers) {
 	clearMessage();
 	twits.setStatusMessage("Saving changes...");
 	twits.setProgress("");
-	var posDiv = locateStoreArea(twits.originalText);
-	if(!posDiv) {
-		alert(config.messages.invalidFileError.format([localPath]));
-		return;
-	}
-	var revised = twits.originalText;
-	// Update the file
-	revised = revised.substr(0,posDiv[0] + startSaveArea.length) + "\n" +
-		store.allTiddlersAsHtml() + "\n" +
-		revised.substr(posDiv[1]);
-	var newSiteTitle = getPageTitle().htmlEncode();
-	revised = revised.replaceChunk("<title"+">","</title"+">"," " + newSiteTitle + " ");
-	revised = updateLanguageAttribute(revised);
-	revised = updateMarkupBlock(revised,"PRE-HEAD","MarkupPreHead");
-	revised = updateMarkupBlock(revised,"POST-HEAD","MarkupPostHead");
-	revised = updateMarkupBlock(revised,"PRE-BODY","MarkupPreBody");
-	revised = updateMarkupBlock(revised,"POST-SCRIPT","MarkupPostBody");
+	
 	// Save the file to Dropbox
 	twits.trackProgress(twits.client.writeFile(twits.originalPath, revised, function(error, stat) {
 		if(error) {
@@ -361,7 +377,6 @@ document.addEventListener("DOMContentLoaded",function(event) {
 },false);
 
 })();
-
 </script>
 <style type="text/css">
 
@@ -473,18 +488,18 @@ body {
 
 </style>
 <div id="twits-greeting">
-<h1>TiddlyWiki in the Sky<br>with Dropbox <span id="twits-dev"></span> <span class="twits-beta">beta</span></h1>
-<p>This app enables you to directly edit TiddlyWiki files stored in your Dropbox. It runs entirely in your browser so your data is never uploaded to tiddlywiki.com.</p>
+<h1>TiddlyWiki5 in the Sky<br>using Dropbox <span id="twits-dev"></span> <span class="twits-beta">beta</span> <br/>(by <a href="https://github.com/Arlen22">@Arlen22</a>*)</h1>
+<p>This app enables you to directly edit TiddlyWiki files stored in your Dropbox. It runs entirely in your browser so your data is never uploaded anywhere except directly to the dropbox account you are logged into.</p>
 <p>If you are having trouble with accented characters in your TiddlyWiki files please see <a href="https://groups.google.com/d/topic/tiddlywiki/dXuJsnD8Irw/discussion" target="_blank">this discussion</a></p>
 <div id="twits-files"></div>
 <div id="twits-footer">
-<p>Built by <a href="http://twitter.com/Jermolene">@Jermolene</a></p>
+<p>*Built by <a href="http://twitter.com/Jermolene">@Jermolene</a>, and modified by <a href="https://github.com/Arlen22">@Arlen22</a>.</p>
 </div>
 </div>
 
 <script type="text/javascript">
 
-  var _gaq = _gaq || [];
+  /*var _gaq = _gaq || [];
   _gaq.push(['_setAccount', 'UA-34591755-1']);
   _gaq.push(['_trackPageview']);
 
@@ -492,7 +507,7 @@ body {
     var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
     ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
     var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-  })();
+  })();*/
 
 </script>
 </body>
